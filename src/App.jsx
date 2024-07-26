@@ -1,0 +1,129 @@
+import React, { useState, useEffect } from "react";
+import Form from "./components/Form";
+import { IoMdMoon, IoMdSunny } from "react-icons/io";
+import "./App.css";
+import PieChart from "./components/PieChart";
+import { data } from "autoprefixer";
+
+function App() {
+  const [categories, setCategories] = useState(null);
+  const [data, setData] = useState(null);
+  const [repos, setRepos] = useState(null);
+  const themeFromLocalStorage = () => localStorage.getItem("theme") || "light";
+  const [userData, setUserData] = useState(null);
+  const [theme, setTheme] = useState(themeFromLocalStorage);
+
+  const getData = (userName) => {
+    fetch(`https://api.github.com/users/${userName}`)
+      .then((response) => response.json())
+      .then((user) => setUserData(user));
+
+    fetch(`https://api.github.com/users/${userName}/repos`)
+      .then((response) => response.json())
+      .then((repos) => setRepos(repos));
+  };
+
+  useEffect(() => {
+    if (repos) {
+      const data = repos.reduce((acc, curVal) => {
+        const { language } = curVal;
+
+        try {
+          if (!acc[language]) {
+            throw new Error("Something went wrong :(");
+          } else {
+            acc[language] += 1;
+          }
+        } catch (error) {
+          acc[language] = 1;
+        }
+
+        return acc;
+      }, {});
+
+      console.log(data);
+      const keys = Object.keys(data);
+      const values = Object.values(data);
+
+      setCategories(keys);
+      setData(values);
+    }
+  }, [repos]);
+
+  return (
+    <div className="min-h-screen p-8 ">
+      <div className="container">
+        <div className="max-w-80 gap-80 mx-auto flex">
+          <h1 className="text-3xl font-bold text-gray-800 ">devfinder</h1>
+        </div>
+
+        <Form getData={getData} />
+        {userData && (
+          <div className="mx-auto w-96 p-6 mt-7 bg-white shadow-md rounded-lg">
+            <div className="flex items-center mb-6">
+              <div className="avatar mr-6">
+                <div className="w-24 rounded-full ring ring-offset-base-100 ring-offset-2 ring-primary">
+                  <img src={userData.avatar_url} alt="User Avatar" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 ">
+                  {userData.login}
+                </h2>
+                <p className="text-gray-500 ">
+                  {userData.bio || "This profile has no bio"}
+                </p>
+                <p className="text-sm text-gray-400 ">
+                  Joined {new Date(userData.created_at).toDateString()}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-around text-center border-t border-gray-200  pt-6">
+              <div>
+                <h4 className="text-gray-600 ">Repos</h4>
+                <p className="text-lg font-semibold text-gray-800 ">23</p>
+              </div>
+              <div>
+                <h4 className="text-gray-600 ">Followers</h4>
+                <p className="text-lg font-semibold text-gray-800 ">
+                  {userData.followers}
+                </p>
+              </div>
+              <div>
+                <h4 className="text-gray-600 ">Following</h4>
+                <p className="text-lg font-semibold text-gray-800 ">
+                  {userData.following}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <p className="text-gray-600 ">
+                <span className="font-semibold">Location:</span>{" "}
+                {userData.location || "Not Available"}
+              </p>
+              <p className="text-gray-600 ">
+                <span className="font-semibold">Blog:</span>{" "}
+                <a
+                  href={userData.blog}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {userData.blog || "Not Available"}
+                </a>
+              </p>
+              <p className="text-gray-600 ">
+                <span className="font-semibold">Company:</span>{" "}
+                {userData.company || "Not Available"}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div>
+        {data && categories && <PieChart data={data} categories={categories} />}
+      </div>
+    </div>
+  );
+}
+
+export default App;
